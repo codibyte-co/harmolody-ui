@@ -1,0 +1,45 @@
+<div [class]="action() ? 'flex items-start gap-2' : ''">
+  <div
+    [id]="controlId()"
+    [attr.role]="multiple() ? 'group' : 'radiogroup'"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.aria-describedby]="ariaDescribedby() || null"
+    [attr.aria-invalid]="invalid() || null"
+    [class]="groupClasses()"
+  >
+    @for (option of options(); track $index; let index = $index) {
+      <label [for]="optionId(index)" [class]="optionClasses(option)">
+        <input
+          [id]="optionId(index)"
+          [type]="multiple() ? 'checkbox' : 'radio'"
+          [name]="controlId()"
+          [checked]="isSelected(option)"
+          [disabled]="isDisabled() || option.disabled"
+          [attr.aria-describedby]="ariaDescribedby() || null"
+          class="sr-only"
+          (change)="selectOption(option)"
+          (blur)="onBlur()"
+        />
+        @if (isSelected(option)) {
+          <hui-icon name="check" [size]="16" [ariaLabel]="localization.translate('Selected')" />
+        }
+        <span>{{ localization.translate(option.label) }}</span>
+      </label>
+    } @empty {
+      <p class="text-muted-foreground">{{ localization.translate('No options available') }}</p>
+    }
+  </div>
+
+  @if (action()) {
+    <button
+      type="button"
+      [disabled]="isDisabled()"
+      [attr.aria-label]="localization.translate(action()?.ariaLabel)"
+      [attr.title]="localization.translate(action()?.tooltip || action()?.ariaLabel)"
+      class="flex shrink-0 rounded-lg border border-border bg-surface p-2 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+      (click)="onActionClick()"
+    >
+      <hui-icon [name]="action()!.icon" [size]="20" />
+    </button>
+  }
+</div>

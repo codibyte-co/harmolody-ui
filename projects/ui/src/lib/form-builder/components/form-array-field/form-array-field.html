@@ -1,0 +1,143 @@
+<div
+  [class]="
+    fieldLayout() === 'row'
+      ? 'form-array-field grid grid-cols-1 gap-2 md:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)] md:gap-x-6'
+      : 'form-array-field'
+  "
+>
+  <!-- Array Header -->
+  <div class="mb-4">
+    <div class="flex flex-col">
+      <div class="flex items-center">
+        <label class="block font-medium text-text-secondary">
+          {{ localization.translate(field().label) }}
+          @if (field().required) {
+            <span class="text-red-500 ml-1">*</span>
+          }
+        </label>
+        @if (field().helper) {
+          <hui-form-helper [id]="field().key + '-array-helper'" [label]="field().label">
+            {{ localization.translate(field().helper) }}
+          </hui-form-helper>
+        }
+      </div>
+      @if (field().description) {
+        <p class="text-muted-foreground">{{ localization.translate(field().description) }}</p>
+      }
+      @if (field().hint) {
+        <p class="text-sm text-muted-foreground mt-1">
+          {{ localization.translate(field().hint) }}
+        </p>
+      }
+    </div>
+  </div>
+
+  <div>
+    <div class="mb-4 flex justify-end">
+      <button
+        type="button"
+        (click)="addItem()"
+        [disabled]="!canAddMore()"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-linear-to-r from-purple-600 to-indigo-700 rounded hover:from-purple-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <hui-icon name="plus" [size]="16" />
+        <span>{{ addButtonLabel() }}</span>
+      </button>
+    </div>
+
+    <!-- Array Items -->
+    @if (items().length > 0) {
+      <div class="space-y-3">
+        @for (itemIndex of items(); track itemIndex) {
+          <div class="border border-border rounded bg-surface shadow-sm">
+            <!-- Item Header -->
+            <div
+              [class]="`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-surface transition-colors ${isExpanded(itemIndex) ? 'rounded-t-md  border-b border-border' : 'rounded'}`"
+              (click)="toggleItem(itemIndex)"
+            >
+              <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  class="text-muted-foreground hover:text-text-secondary focus:outline-none flex items-center justify-center"
+                >
+                  <hui-icon
+                    [name]="isExpanded(itemIndex) ? 'chevron-down' : 'chevron-right'"
+                    [size]="20"
+                  />
+                </button>
+                <span class="font-medium text-text-primary">
+                  {{ itemLabel()(itemIndex) }}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                (click)="removeItem(itemIndex); $event.stopPropagation()"
+                [disabled]="!canRemove()"
+                class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                [attr.title]="removeButtonLabel()"
+              >
+                <hui-icon name="trash" [size]="14" />
+                <span>{{ removeButtonLabel() }}</span>
+              </button>
+            </div>
+
+            <!-- Item Content -->
+            @if (isExpanded(itemIndex)) {
+              <div class="p-4">
+                <hui-form-array-item
+                  [fields]="field().arrayFields || []"
+                  [form]="getItemGroup(itemIndex)"
+                  [fieldLayout]="fieldLayout()"
+                  [apiConfig]="apiConfig()"
+                  [validationStrategy]="validationStrategy()"
+                  [formSubmitted]="formSubmitted()"
+                  [layoutClass]="getArrayLayoutClass()"
+                />
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="text-center py-8 px-4 border-2 border-dashed border-border rounded-lg bg-muted">
+        <hui-icon name="inbox" [size]="48" class="text-muted-foreground mx-auto mb-3" />
+        <p class="text-muted-foreground mb-3">
+          {{ localization.translate('No items added yet') }}
+        </p>
+        <button
+          type="button"
+          (click)="addItem()"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-600 bg-surface border border-purple-600 rounded-lg hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        >
+          <hui-icon name="plus" [size]="16" />
+          <span>{{ addButtonLabel() }}</span>
+        </button>
+      </div>
+    }
+
+    <!-- Min/Max Info -->
+    @if (field().minItems || field().maxItems) {
+      <div class="mt-2 text-sm text-muted-foreground">
+        @if (field().minItems && field().maxItems) {
+          <span>
+            {{
+              localization.translate('{min} - {max} items', {
+                min: field().minItems!,
+                max: field().maxItems!,
+              })
+            }}
+          </span>
+        } @else if (field().minItems) {
+          <span>{{
+            localization.translate('Minimum {count} items', { count: field().minItems! })
+          }}</span>
+        } @else if (field().maxItems) {
+          <span>{{
+            localization.translate('Maximum {count} items', { count: field().maxItems! })
+          }}</span>
+        }
+      </div>
+    }
+  </div>
+</div>

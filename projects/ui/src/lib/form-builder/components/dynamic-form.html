@@ -1,0 +1,130 @@
+<form [formGroup]="form()" (ngSubmit)="onSubmit()" class="dynamic-form">
+  <div class="space-y-6">
+    @for (fieldset of visibleFieldsets(); track fieldset.config.key) {
+      <fieldset [class]="getFieldsetClass(fieldset.config)">
+        <legend class="px-2 text-base font-semibold text-foreground">
+          {{ localization.translate(fieldset.config.legend) }}
+        </legend>
+        @if (fieldset.config.description) {
+          <p class="mb-5 text-sm text-muted-foreground">
+            {{ localization.translate(fieldset.config.description) }}
+          </p>
+        }
+
+        <div [class]="layoutClass()">
+          @for (field of fieldset.fields; track field.key) {
+            <div [class]="getFieldColumnClass(field)">
+              <hui-dynamic-field
+                [field]="field"
+                [form]="form()"
+                [fieldLayout]="config().fieldLayout || 'column'"
+                [apiConfig]="config().apiConfig"
+                [validationStrategy]="config().validationStrategy || 'touched'"
+                [formSubmitted]="submitted()"
+                (actionClick)="onFieldActionClick($event)"
+              />
+            </div>
+          }
+        </div>
+      </fieldset>
+    }
+
+    @if (ungroupedFields().length > 0) {
+      <div [class]="layoutClass()">
+        @for (field of ungroupedFields(); track field.key) {
+          <div [class]="getFieldColumnClass(field)">
+            <hui-dynamic-field
+              [field]="field"
+              [form]="form()"
+              [fieldLayout]="config().fieldLayout || 'column'"
+              [apiConfig]="config().apiConfig"
+              [validationStrategy]="config().validationStrategy || 'touched'"
+              [formSubmitted]="submitted()"
+              (actionClick)="onFieldActionClick($event)"
+            />
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Form Actions -->
+  <div
+    [class]="
+      'flex flex-wrap items-center justify-end gap-3 mt-6 pt-4' +
+      (config().actionsWrapper?.cssClass ? ' ' + config().actionsWrapper?.cssClass : '')
+    "
+  >
+    @if (!hasCustomActions() && config().showCancelButton?.hidden !== true) {
+      <button
+        type="button"
+        (click)="cancel.emit()"
+        [disabled]="busy()"
+        class="inline-flex items-center gap-2 py-2 px-4 bg-surface text-foreground border border-border rounded-lg hover:bg-card focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+      >
+        <hui-icon name="close" [size]="18" />
+        {{ localization.translate(config().showCancelButton?.label || 'Cancel') }}
+      </button>
+    }
+    @if (hasCustomActions()) {
+      <!-- Custom Actions -->
+      @for (action of sortedActions(); track action.key) {
+        <button
+          [type]="action.type === 'submit' ? 'submit' : 'button'"
+          (click)="action.type === 'submit' ? null : onActionClick(action)"
+          [disabled]="isActionDisabled(action)"
+          [class]="getActionClass(action)"
+        >
+          @if (action.type === 'submit' && submitting()) {
+            <span class="flex items-center justify-center gap-2">
+              <hui-icon name="loader-2" class="h-5 w-5 animate-spin" />
+              <span>{{ localization.translate('Submitting...') }}</span>
+            </span>
+          } @else {
+            <span class="flex items-center gap-2">
+              @if (action.icon && action.iconPosition !== 'right') {
+                <hui-icon [name]="action.icon" class="h-5 w-5" />
+              }
+              <span>{{ localization.translate(action.label) }}</span>
+              @if (action.icon && action.iconPosition === 'right') {
+                <hui-icon [name]="action.icon" class="h-5 w-5" />
+              }
+            </span>
+          }
+        </button>
+      }
+    } @else {
+      @if (!config().resetButton?.hidden) {
+        <button
+          type="button"
+          (click)="onReset()"
+          [disabled]="busy()"
+          class="inline-flex items-center gap-2 py-2 px-4 bg-surface text-foreground border border-border rounded-lg hover:bg-card focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+          [class]="config().resetButton?.cssClass || ''"
+        >
+          <hui-icon name="reload" [size]="18" />
+          {{ localization.translate(config().resetButton?.label || 'Reset') }}
+        </button>
+      }
+      <!-- Default Submit/Reset Buttons -->
+      @if (!config().submitButton?.hidden) {
+        <button
+          type="submit"
+          [disabled]="form().invalid || busy()"
+          class="inline-flex items-center gap-2 py-2 px-4 bg-primary text-primary-foreground rounded-lg focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+          [class]="config().submitButton?.cssClass || ''"
+        >
+          @if (submitting()) {
+            <span class="flex items-center justify-center gap-2">
+              <hui-icon name="loader-2" class="h-5 w-5 animate-spin" />
+              <span>{{ localization.translate('Submitting...') }}</span>
+            </span>
+          } @else {
+            <hui-icon name="check" [size]="18" />
+            <span>{{ localization.translate(config().submitButton?.label || 'Submit') }}</span>
+          }
+        </button>
+      }
+    }
+  </div>
+</form>

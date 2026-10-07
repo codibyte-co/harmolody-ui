@@ -1,0 +1,128 @@
+<div [class]="hasAction() ? 'flex items-center gap-2' : ''">
+  <div class="relative flex-1">
+    <button
+      #trigger
+      type="button"
+      role="combobox"
+      aria-haspopup="listbox"
+      [id]="controlId()"
+      [disabled]="isDisabled()"
+      [attr.aria-label]="ariaLabel() || null"
+      [attr.aria-describedby]="ariaDescribedby() || null"
+      [attr.aria-invalid]="isInvalid() || null"
+      [attr.aria-expanded]="isOpen()"
+      [attr.aria-controls]="listboxId()"
+      [attr.aria-activedescendant]="isOpen() && activeIndex() >= 0 ? optionId(activeIndex()) : null"
+      [class]="triggerClasses()"
+      (click)="toggleDropdown()"
+      (keydown)="onTriggerKeydown($event)"
+      [style.min-width]="minWidth()"
+    >
+      <span
+        class="min-w-0 flex-1 truncate"
+        [class.text-muted-foreground]="!hasSelection()"
+        [title]="hasSelection() ? displayLabel() : ''"
+      >
+        {{ displayLabel() }}
+      </span>
+
+      <span class="ml-auto flex shrink-0 items-center gap-2">
+        @if (multiple() && selectedCount() > 0) {
+          <span
+            class="inline-flex min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 py-0.5 text-sm font-semibold text-primary"
+            aria-hidden="true"
+          >
+            {{ selectedCount() }}
+          </span>
+        }
+        <hui-icon
+          name="chevron-down"
+          [size]="18"
+          [ariaLabel]="localization.translate('Toggle options')"
+          customClass="text-muted-foreground transition-transform"
+          [class.rotate-180]="isOpen()"
+        />
+      </span>
+    </button>
+
+    @if (isOpen() && !isDisabled()) {
+      <div
+        #dropdown
+        [id]="listboxId()"
+        role="listbox"
+        [attr.aria-label]="ariaLabel() || panelLabel()"
+        [attr.aria-multiselectable]="multiple() || null"
+        [attr.data-placement]="dropdownPlacement()"
+        [class]="dropdownClasses()"
+        (mousedown)="$event.preventDefault()"
+      >
+        <div
+          #dropdownHeader
+          class="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5"
+        >
+          <span class="truncate font-medium text-foreground">{{ panelLabel() }}</span>
+          @if (multiple() && selectedCount() > 0) {
+            <button
+              type="button"
+              class="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+              (click)="clearAll($event)"
+            >
+              {{ localization.translate('Clear all') }}
+            </button>
+          }
+        </div>
+
+        <div
+          #optionsViewport
+          class="overflow-y-auto p-2"
+          [style.max-height.px]="availableOptionsHeight()"
+        >
+          @for (option of options(); track option.value; let index = $index) {
+            <button
+              type="button"
+              role="option"
+              tabindex="-1"
+              [id]="optionId(index)"
+              [disabled]="option.disabled"
+              [attr.aria-selected]="isOptionSelected(option)"
+              [attr.aria-disabled]="option.disabled || null"
+              [class]="optionClasses(option, index)"
+              (click)="selectOption(option)"
+            >
+              <span class="min-w-0 flex-1 truncate">{{
+                localization.translate(option.label)
+              }}</span>
+              @if (isOptionSelected(option)) {
+                <hui-icon
+                  name="check"
+                  [size]="17"
+                  [ariaLabel]="localization.translate('Selected')"
+                  customClass="text-primary"
+                />
+              }
+            </button>
+          } @empty {
+            <p class="px-3 py-5 text-center text-muted-foreground">
+              {{ localization.translate('No options available') }}
+            </p>
+          }
+        </div>
+      </div>
+
+      <div class="fixed inset-0 z-20" aria-hidden="true" (click)="closeDropdown()"></div>
+    }
+  </div>
+
+  @if (hasAction()) {
+    <button
+      type="button"
+      (click)="onActionClick()"
+      [disabled]="isDisabled()"
+      [attr.aria-label]="localization.translate(action()?.ariaLabel)"
+      [attr.title]="localization.translate(action()?.tooltip || action()?.ariaLabel)"
+      class="flex shrink-0 rounded-lg border border-border bg-surface p-2 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <hui-icon [name]="action()!.icon" [size]="20" />
+    </button>
+  }
+</div>

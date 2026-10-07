@@ -1,0 +1,250 @@
+@if (isVisible()) {
+  @switch (field().type) {
+    <!-- Array Field - uses forwardRef to break circular dependency -->
+    @case ('array') {
+      <div [class]="field().containerClass || ''">
+        <hui-form-array-field
+          [field]="field()"
+          [form]="form()"
+          [fieldLayout]="fieldLayout()"
+          [apiConfig]="apiConfig()"
+          [validationStrategy]="validationStrategy()"
+          [formSubmitted]="formSubmitted()"
+        />
+      </div>
+    }
+
+    <!-- All other fields with FormFieldComponent wrapper -->
+    @default {
+      <div [class]="field().containerClass || ''">
+        <hui-form-field
+          [label]="localization.translate(field().label)"
+          [layout]="fieldLayout()"
+          [required]="field().required || false"
+          [hint]="localization.translate(field().hint)"
+          [helper]="localization.translate(field().helper)"
+          [description]="localization.translate(field().description)"
+          [note]="localization.translate(field().note)"
+          [noteVariant]="field().noteVariant || 'info'"
+          [noteClasses]="field().noteClasses || ''"
+          [fieldName]="localization.translate(field().label)"
+          [validationStrategy]="validationStrategy()"
+          [formSubmitted]="formSubmitted()"
+          [control]="control()"
+          [inputId]="fieldId()"
+          [type]="field().type"
+        >
+          @switch (field().type) {
+            @case ('checkbox') {
+              <hui-checkbox
+                [id]="fieldId()"
+                [formControl]="control()"
+                [ariaLabel]="localization.translate(field().label)"
+              />
+            }
+            @case ('switch') {
+              <hui-switch
+                [id]="fieldId()"
+                [formControl]="control()"
+                [ariaLabel]="localization.translate(field().label)"
+              />
+            }
+            @case ('text') {
+              <hui-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [invalid]="showError()"
+              />
+            }
+            @case ('email') {
+              <hui-email-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [displayInvalid]="showError()"
+              />
+            }
+            @case ('password') {
+              <hui-password-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [displayInvalid]="showError()"
+              />
+            }
+            @case ('textarea') {
+              <hui-textarea
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [rows]="field().rows || 4"
+                [invalid]="showError()"
+              />
+            }
+            @case ('number') {
+              <hui-number-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [min]="field().min"
+                [max]="field().max"
+                [step]="field().step || 1"
+                [invalid]="showError()"
+              />
+            }
+            @case ('tel') {
+              <hui-tel-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [invalid]="showError()"
+              />
+            }
+            @case ('url') {
+              <hui-url-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [invalid]="showError()"
+              />
+            }
+            @case ('select') {
+              @if (field().optionPresentation === 'chips') {
+                <hui-choice-chips
+                  [id]="fieldId()"
+                  [formControl]="control()"
+                  [options]="options()"
+                  [multiple]="field().multiple || false"
+                  [layout]="field().chipLayout || 'wrap'"
+                  [ariaLabel]="localization.translate(field().label)"
+                  [invalid]="showError()"
+                  [action]="field().action"
+                  (actionClick)="onFieldActionClick()"
+                />
+              } @else if (field().searchable) {
+                <hui-search-input
+                  [id]="fieldId()"
+                  [formControl]="control()"
+                  [placeholder]="localization.translate(field().placeholder || 'Search...')"
+                  (search)="onSearch($any($event).target.value)"
+                />
+                <!-- TODO: Add dropdown with filtered options -->
+              } @else {
+                <hui-select
+                  [id]="fieldId()"
+                  [formControl]="control()"
+                  [placeholder]="localization.translate(field().placeholder || 'Select...')"
+                  [options]="options()"
+                  [multiple]="field().multiple || false"
+                  [invalid]="showError()"
+                  [action]="field().action"
+                  (actionClick)="onFieldActionClick()"
+                />
+              }
+            }
+            @case ('autocomplete') {
+              <hui-autocomplete
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder || 'Search...')"
+                [mode]="field().optionsFromApi ? 'server' : 'local'"
+                [options]="options()"
+                [serverResults]="options()"
+                [loading]="loading()"
+                [minChars]="field().minSearchLength || 1"
+                [multiple]="field().multiple || false"
+                [invalid]="showError()"
+                [action]="field().action"
+                (search)="onSearch($event)"
+                (select)="onAutocompleteSelect($event)"
+                (actionClick)="onFieldActionClick()"
+              />
+            }
+            @case ('radio') {
+              <hui-radio-group [id]="fieldId()" [formControl]="control()" [options]="options()" />
+            }
+            @case ('search') {
+              <hui-search-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder || 'Search...')"
+                (search)="onSearch($any($event).target.value)"
+              />
+            }
+            @case ('date') {
+              <hui-date-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [mode]="field().dateMode || 'date'"
+                [placeholder]="localization.translate(field().placeholder)"
+                [min]="field().minDate || ''"
+                [max]="field().maxDate || ''"
+                [invalid]="showError()"
+              />
+            }
+            @case ('datetime') {
+              <hui-date-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                mode="datetime-local"
+                [placeholder]="localization.translate(field().placeholder)"
+                [min]="field().minDate || ''"
+                [max]="field().maxDate || ''"
+                [invalid]="showError()"
+              />
+            }
+            @case ('month') {
+              <hui-date-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                mode="month"
+                [placeholder]="localization.translate(field().placeholder)"
+                [min]="field().minDate || ''"
+                [max]="field().maxDate || ''"
+                [invalid]="showError()"
+              />
+            }
+            @case ('year') {
+              <hui-date-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                mode="year"
+                [placeholder]="localization.translate(field().placeholder)"
+                [min]="field().minDate || ''"
+                [max]="field().maxDate || ''"
+                [invalid]="showError()"
+              />
+            }
+            @case ('image-selector') {
+              <hui-image-selector-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [mediaType]="field().mediaType || 'Cover'"
+                [allowUpload]="field().allowUpload ?? true"
+                [altText]="field().altText || ''"
+                [showPreview]="field().showPreview ?? true"
+                [editableInput]="field().editableInput ?? false"
+                [invalid]="showError()"
+              />
+            }
+            @case ('file') {
+              <hui-file-input
+                [id]="fieldId()"
+                [formControl]="control()"
+                [placeholder]="localization.translate(field().placeholder)"
+                [accept]="field().accept || ''"
+                [multiple]="field().multiple ?? false"
+                [maxSize]="field().maxSize"
+                [maxFiles]="field().maxFiles"
+                [enableDragDrop]="field().enableDragDrop ?? true"
+                [invalid]="showError()"
+              />
+            }
+          }
+        </hui-form-field>
+      </div>
+    }
+  }
+}

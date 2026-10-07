@@ -1,0 +1,632 @@
+<div
+  class="bg-background rounded-2xl border border-border overflow-hidden relative"
+  [class.border]="config().bordered"
+  [class.border-border]="config().bordered"
+>
+  <!-- Loading Overlay -->
+  @if (config().loading && displayedData().length > 0) {
+    <div class="absolute inset-0 z-20 flex items-center justify-center">
+      <div class="flex flex-col items-center gap-3">
+        <svg class="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="2"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <span
+          class="font-medium text-muted-foreground bg-background rounded-full shadow-sm px-2.5 py-2"
+          >{{ localization.translate('Refreshing data...') }}</span
+        >
+      </div>
+    </div>
+  }
+
+  <!-- Table Wrapper -->
+  <div
+    class="table-scroll-container overflow-x-auto"
+    [class.overflow-y-auto]="hasStickyHeader()"
+    [style.max-height]="tableMaxHeight()"
+    (scroll)="onTableScroll($event)"
+  >
+    <table class="w-full border-collapse">
+      <!-- Table Header -->
+      @if (shouldRenderHeader()) {
+        <thead
+          class="bg-surface border-b border-border"
+          [class.table-header-scrolled]="hasStickyHeader() && isTableScrolled()"
+          [class.table-header-on-scroll]="config().showHeaderOnlyOnScroll"
+          [class.table-header-visible]="isHeaderVisible()"
+          [attr.aria-hidden]="!isHeaderVisible()"
+        >
+          <tr>
+            <!-- Row Reorder Column -->
+            @if (hasRowReordering()) {
+              <th
+                class="w-12 px-3 py-3"
+                [class.sticky]="hasStickyHeader()"
+                [class.top-0]="hasStickyHeader()"
+                [class.z-10]="hasStickyHeader()"
+                [class.bg-surface]="hasStickyHeader()"
+              >
+                <span class="sr-only">{{ localization.translate('Reorder') }}</span>
+              </th>
+            }
+
+            <!-- Selection Column -->
+            @if (hasSelection()) {
+              <th
+                class="w-12 px-6 py-3"
+                [class.sticky]="hasStickyHeader()"
+                [class.top-0]="hasStickyHeader()"
+                [class.z-10]="hasStickyHeader()"
+                [class.bg-surface]="hasStickyHeader()"
+              >
+                <div class="flex items-center justify-center">
+                  @if (isMultiSelect()) {
+                    <hui-checkbox
+                      [id]="instanceId + '-select-all'"
+                      [class]="''"
+                      [ariaLabel]="localization.translate('Select all rows')"
+                      [ngModel]="allRowsSelected()"
+                      (ngModelChange)="toggleAllRows()"
+                    />
+                  }
+                </div>
+              </th>
+            }
+
+            <!-- Row Number Column -->
+            @if (showRowNumbers()) {
+              <th
+                class="w-10 text-center text-sm font-medium text-muted-foreground uppercase tracking-wider"
+                [class]="config().compact ? 'px-3 py-2 ' : 'px-2 py-3'"
+                [class.sticky]="hasStickyHeader()"
+                [class.top-0]="hasStickyHeader()"
+                [class.z-10]="hasStickyHeader()"
+                [class.bg-surface]="hasStickyHeader()"
+              >
+                {{ localization.translate('No.') }}
+              </th>
+            }
+
+            <!-- Data Columns -->
+            @for (column of config().columns; track column.key) {
+              <th
+                [class]="
+                  'text-sm font-medium text-muted-foreground uppercase tracking-wider ' +
+                  getAlignClass(getHeaderAlign(column)) +
+                  (config().compact ? ' px-3 py-2 ' : ' px-6 py-3') +
+                  ' ' +
+                  getResponsiveHideClass(column)
+                "
+                [class.sticky]="hasStickyHeader()"
+                [class.top-0]="hasStickyHeader()"
+                [class.z-10]="hasStickyHeader()"
+                [class.bg-surface]="hasStickyHeader()"
+                [class.cursor-pointer]="column.sortable"
+                [class.select-none]="column.sortable"
+                [class.hover:bg-surface]="column.sortable"
+                [class.transition-colors]="column.sortable"
+                [class.text-primary]="isSorted(column.key)"
+                [style.width]="column.width"
+                scope="col"
+                [attr.tabindex]="column.sortable ? 0 : null"
+                [attr.aria-sort]="
+                  column.sortable
+                    ? isSorted(column.key)
+                      ? currentSort().direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                    : null
+                "
+                (keydown.enter)="column.sortable ? onSort(column.key) : null"
+                (keydown.space)="
+                  column.sortable ? onSort(column.key) : null; $event.preventDefault()
+                "
+                (click)="column.sortable ? onSort(column.key) : null"
+              >
+                <div class="flex items-center gap-2" [class]="getHeaderContentAlignClass(column)">
+                  <span>{{ localization.translate(column.label) }}</span>
+                  @if (column.sortable) {
+                    <svg
+                      class="transition-colors"
+                      [class.text-muted-foreground]="!isSorted(column.key)"
+                      [class.text-primary]="isSorted(column.key)"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                    >
+                      <path [attr.d]="getSortIcon(column.key)" />
+                    </svg>
+                  }
+                </div>
+              </th>
+            }
+
+            <!-- Actions Column -->
+            @if (hasActions()) {
+              <th
+                class="w-32 text-right text-sm font-medium text-muted-foreground uppercase tracking-wider"
+                [class]="config().compact ? 'px-3 py-2 ' : 'px-6 py-3'"
+                [class.sticky]="hasStickyHeader()"
+                [class.top-0]="hasStickyHeader()"
+                [class.z-10]="hasStickyHeader()"
+                [class.bg-surface]="hasStickyHeader()"
+              >
+                {{ localization.translate('Actions') }}
+              </th>
+            }
+          </tr>
+        </thead>
+      }
+
+      <!-- Table Body -->
+      <tbody class="bg-card divide-y divide-border/50">
+        <!-- Loading State (Initial Load Only) -->
+        @if (config().loading && displayedData().length === 0) {
+          <tr>
+            <td
+              [attr.colspan]="
+                config().columns.length +
+                (hasRowReordering() ? 1 : 0) +
+                (hasSelection() ? 1 : 0) +
+                (showRowNumbers() ? 1 : 0) +
+                (hasActions() ? 1 : 0)
+              "
+              class="py-12"
+            >
+              <div class="flex items-center justify-center text-muted-foreground">
+                <svg class="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span class="ml-3">{{ localization.translate('Loading...') }}</span>
+              </div>
+            </td>
+          </tr>
+        }
+
+        <!-- Empty State -->
+        @if (!config().loading && displayedData().length === 0) {
+          <tr>
+            <td
+              [attr.colspan]="
+                config().columns.length +
+                (hasRowReordering() ? 1 : 0) +
+                (hasSelection() ? 1 : 0) +
+                (showRowNumbers() ? 1 : 0) +
+                (hasActions() ? 1 : 0)
+              "
+              class="py-12"
+            >
+              <div class="flex flex-col items-center justify-center text-muted-foreground">
+                <hui-icon name="mood-puzzled" [size]="48" class="text-muted-foreground" />
+                <p class="font-medium">
+                  {{ localization.translate(config().emptyMessage || 'No data available') }}
+                </p>
+              </div>
+            </td>
+          </tr>
+        }
+
+        <!-- Data Rows -->
+        @for (row of displayedData(); track getRowKey(row, $index); let i = $index) {
+          <tr
+            class="transition-colors"
+            [class]="getRowClass(row, i)"
+            [class.bg-surface/50]="config().striped && i % 2 === 1"
+            [class.table-row-hoverable]="config().hoverable"
+            [class.table-row-selected]="isRowSelected(row)"
+            [class.opacity-50]="draggedRowIndex() === i"
+            [class.outline-2]="dragOverRowIndex() === i && draggedRowIndex() !== i"
+            [class.outline-primary]="dragOverRowIndex() === i && draggedRowIndex() !== i"
+            [class.cursor-pointer]="config().onRowClick"
+            (dragover)="onRowDragOver($event, i)"
+            (drop)="onRowDrop($event, i)"
+            (click)="config().onRowClick ? onRowClick(row, i, $event) : null"
+          >
+            <!-- Row Reorder Handle -->
+            @if (hasRowReordering()) {
+              <td class="w-12 px-3 py-3 text-center">
+                <button
+                  type="button"
+                  [draggable]="!isRowReorderDisabled(row, i)"
+                  class="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                  [class.cursor-grab]="!isRowReorderDisabled(row, i)"
+                  [class.cursor-not-allowed]="isRowReorderDisabled(row, i)"
+                  [class.opacity-30]="isRowReorderDisabled(row, i)"
+                  [attr.aria-disabled]="isRowReorderDisabled(row, i)"
+                  [attr.aria-label]="localization.translate('Move row {row}', { row: i + 1 })"
+                  [attr.title]="
+                    localization.translate(
+                      isRowReorderDisabled(row, i) ? 'This row cannot be moved' : 'Drag to reorder'
+                    )
+                  "
+                  (dragstart)="onRowDragStart($event, i)"
+                  (dragend)="clearRowDragState()"
+                  (click)="onRowReorderHandleClick(row, i, $event)"
+                >
+                  <hui-icon
+                    name="dots"
+                    [size]="20"
+                    [ariaLabel]="localization.translate('Drag to reorder')"
+                  />
+                </button>
+              </td>
+            }
+
+            <!-- Selection Cell -->
+            @if (hasSelection()) {
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-center">
+                  <hui-checkbox
+                    [id]="instanceId + '-row-' + i"
+                    [class]="''"
+                    [ariaLabel]="localization.translate('Select row {row}', { row: i + 1 })"
+                    [ngModel]="isRowSelected(row)"
+                    (ngModelChange)="toggleRowSelection(row, i)"
+                  />
+                </div>
+              </td>
+            }
+
+            <!-- Row Number Cell -->
+            @if (showRowNumbers()) {
+              <td
+                class="w-10 text-center text-muted-foreground font-medium"
+                [class]="config().compact ? 'px-3 py-2 text-sm' : 'px-2 py-2'"
+              >
+                {{ getRowNumber(i) }}
+              </td>
+            }
+
+            <!-- Data Cells -->
+            @for (column of config().columns; track column.key) {
+              <td
+                [class]="
+                  ' text-foreground ' +
+                  getAlignClass(column.align) +
+                  ' ' +
+                  getCellClass(row, column) +
+                  (config().compact ? ' px-3 py-2 text-sm' : ' px-6 py-3') +
+                  ' ' +
+                  getResponsiveHideClass(column)
+                "
+              >
+                <!-- Custom Cell Content -->
+                @if (getCellTemplate(column); as cellTemplate) {
+                  <ng-container
+                    *ngTemplateOutlet="
+                      cellTemplate;
+                      context: {
+                        $implicit: getCellValue(row, column, i),
+                        row: row,
+                        index: i,
+                        column: column,
+                      }
+                    "
+                  ></ng-container>
+                }
+                <!-- Image Type -->
+                @else if (column.type === 'image') {
+                  <div class="flex items-center">
+                    <img
+                      [src]="getCellValue(row, column, i)"
+                      [alt]="column.label"
+                      [class]="column.imageClass || 'w-10 h-10 rounded-full object-cover'"
+                      (error)="$any($event.target).src = column.imageFallback || ''"
+                    />
+                  </div>
+                }
+                <!-- Icon Type -->
+                @else if (column.type === 'icon') {
+                  <span
+                    class="inline-flex items-center"
+                    [attr.title]="getCellIconLabel(row, column, i)"
+                  >
+                    <hui-icon
+                      [name]="getCellIcon(row, column, i)"
+                      [size]="column.iconSize || 22"
+                      [customClass]="getCellIconClass(row, column, i)"
+                      [ariaLabel]="getCellIconLabel(row, column, i)"
+                    />
+                  </span>
+                }
+                <!-- Component Type -->
+                @else if (column.type === 'component' && column.component) {
+                  <ng-container
+                    *ngComponentOutlet="
+                      column.component;
+                      inputs: getComponentInputs(row, column, i)
+                    "
+                  ></ng-container>
+                }
+                <!-- Link Type -->
+                @else if (getLinkUrl(row, column)) {
+                  @if (column.linkTarget === '_blank') {
+                    <!-- External link - use href with target="_blank" -->
+                    <a
+                      [href]="getLinkUrl(row, column)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-primary hover:text-primary/80 hover:underline font-medium"
+                      (click)="$event.stopPropagation()"
+                    >
+                      @if (column.render) {
+                        <span [innerHTML]="getCellValue(row, column, i)"></span>
+                      } @else {
+                        {{ getCellValue(row, column, i) }}
+                      }
+                    </a>
+                  } @else {
+                    <!-- Internal link - use routerLink for Angular routing -->
+                    <a
+                      [routerLink]="getLinkUrl(row, column)"
+                      class="text-primary hover:text-primary/80 hover:underline font-medium"
+                      (click)="onLinkClick(row, column, $event)"
+                    >
+                      @if (column.render) {
+                        <span [innerHTML]="getCellValue(row, column, i)"></span>
+                      } @else {
+                        {{ getCellValue(row, column, i) }}
+                      }
+                    </a>
+                  }
+                }
+                <!-- Text Type (Default) -->
+                @else {
+                  @if (column.render) {
+                    <span
+                      [class]="column.type === 'text' ? '' : 'whitespace-nowrap'"
+                      [innerHTML]="getCellValue(row, column, i)"
+                    ></span>
+                  } @else {
+                    <span [class]="column.type === 'text' ? '' : 'whitespace-nowrap'">
+                      {{ getCellValue(row, column, i) }}
+                    </span>
+                  }
+                }
+              </td>
+            }
+
+            <!-- Actions Cell -->
+            @if (hasActions()) {
+              <td [class]="config().compact ? 'px-3 py-2' : 'px-6 py-3'">
+                <div class="flex items-center justify-end gap-2">
+                  @for (action of getVisibleActions(row); track $index; let actionIdx = $index) {
+                    @if (!hasSubmenu(action)) {
+                      <!-- Regular Action Button -->
+                      <button
+                        type="button"
+                        (click)="handleActionClick(action, row, i, $event)"
+                        [disabled]="isActionDisabled(action, row)"
+                        [class]="
+                          'inline-flex items-center justify-center p-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed ' +
+                          getActionVariantClass(action.variant)
+                        "
+                        [attr.title]="localization.translate(action.title || action.label)"
+                        [attr.aria-label]="localization.translate(action.label)"
+                      >
+                        @if (action.icon) {
+                          <hui-icon [name]="action.icon" [size]="18" />
+                        } @else {
+                          <span class="font-medium">{{
+                            localization.translate(action.label)
+                          }}</span>
+                        }
+                      </button>
+                    } @else {
+                      <!-- Dropdown Action Button -->
+                      <div class="relative" [id]="getDropdownId(i, actionIdx)">
+                        <button
+                          #dropdownButton
+                          type="button"
+                          (click)="
+                            toggleDropdown(i, actionIdx, dropdownButton); $event.stopPropagation()
+                          "
+                          [disabled]="isActionDisabled(action, row)"
+                          [class]="
+                            'inline-flex items-center justify-center gap-1 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed ' +
+                            getActionVariantClass(action.variant)
+                          "
+                          [attr.title]="localization.translate(action.title || action.label)"
+                          [attr.aria-label]="localization.translate(action.label)"
+                          [attr.aria-expanded]="isDropdownOpen(i, actionIdx)"
+                        >
+                          @if (action.icon) {
+                            <hui-icon [name]="action.icon" [size]="18" />
+                          } @else {
+                            <span class="font-medium">{{
+                              localization.translate(action.label)
+                            }}</span>
+                          }
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        @if (isDropdownOpen(i, actionIdx)) {
+                          <div
+                            class="table-dropdown-menu w-56 max-h-[min(24rem,calc(100vh-2rem))] overflow-y-auto overscroll-contain bg-surface rounded-xl shadow-xl border border-border p-2"
+                            [style.top.px]="dropdownPosition().top"
+                            [style.bottom.px]="dropdownPosition().bottom"
+                            [style.left.px]="dropdownPosition().left"
+                            (click)="$event.stopPropagation()"
+                          >
+                            @for (
+                              subAction of action.submenu;
+                              track subAction.label;
+                              let subIdx = $index
+                            ) {
+                              @if (subAction.divider) {
+                                <div class="my-1 border-t border-border"></div>
+                              } @else if (!subAction.hidden || !subAction.hidden(row)) {
+                                <button
+                                  type="button"
+                                  (click)="
+                                    subAction.onClick ? subAction.onClick(row, i) : null;
+                                    closeAllDropdowns();
+                                    $event.stopPropagation()
+                                  "
+                                  [disabled]="isActionDisabled(subAction, row)"
+                                  [class]="
+                                    'w-full text-left px-4 py-2 rounded  flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
+                                    getActionSubmenuVariantClass(subAction.variant)
+                                  "
+                                >
+                                  @if (subAction.icon) {
+                                    <hui-icon [name]="subAction.icon" [size]="18" />
+                                  }
+                                  <span>{{ localization.translate(subAction.label) }}</span>
+                                </button>
+                              }
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  }
+                </div>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (config().pagination && !config().loading) {
+    <div
+      [class]="
+        config().pagination?.layout === 'stacked'
+          ? 'flex flex-col items-stretch gap-3 border-t border-border bg-surface px-3 py-3'
+          : 'flex flex-wrap flex-col md:flex-row items-start md:items-center justify-between px-6 py-3 border-t border-border bg-surface gap-4'
+      "
+    >
+      <!-- Results Info -->
+      <div class="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
+        <span class="text-muted-foreground hidden lg:inline">
+          {{ localization.translate('Showing') }}
+          <span class="font-medium">{{
+            (config().pagination!.page - 1) * config().pagination!.pageSize + 1
+          }}</span>
+          {{ localization.translate('to') }}
+          <span class="font-medium">{{
+            Math.min(
+              config().pagination!.page * config().pagination!.pageSize,
+              config().pagination!.total
+            )
+          }}</span>
+          {{ localization.translate('of') }}
+          <span class="font-medium">{{ config().pagination!.total }}</span>
+          {{ localization.translate('results') }}
+        </span>
+
+        <!-- Page Size Selector -->
+        @if (config().pagination!.pageSizeOptions) {
+          <div class="flex items-center gap-2">
+            <label for="pageSize" class="text-muted-foreground">{{
+              localization.translate('Rows per page:')
+            }}</label>
+            <select
+              id="pageSize"
+              [value]="config().pagination!.pageSize"
+              (change)="onPageSizeChange($event)"
+              class="ml-2 px-2 py-1 border bg-surface border-border rounded focus:outline-none focus:border-primary"
+            >
+              @for (size of config().pagination!.pageSizeOptions; track size) {
+                <option [value]="size" [selected]="size === config().pagination!.pageSize">
+                  {{ size }}
+                </option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+
+      <!-- Page Controls -->
+      <div class="flex flex-wrap items-center gap-1 w-full md:w-auto justify-center">
+        <!-- Previous Button -->
+        <button
+          type="button"
+          (click)="onPageChange(config().pagination!.page - 1)"
+          [disabled]="config().pagination!.page === 1"
+          class="flex items-center justify-center w-9 h-9 rounded border border-border/50 bg-surface text-muted-foreground hover:bg-surface/50 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+          [attr.aria-label]="localization.translate('Previous page')"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+
+        <!-- Page Numbers -->
+        @for (page of pageNumbers(); track page) {
+          @if (page === '...') {
+            <span class="px-3 py-1 text-muted-foreground">...</span>
+          } @else {
+            <button
+              type="button"
+              (click)="onPageChange(page)"
+              class="flex items-center justify-center w-9 h-9 rounded border border-border/50 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+              [class.bg-primary]="page === config().pagination!.page"
+              [class.bg-surface]="page !== config().pagination!.page"
+              [class.border-primary]="page === config().pagination!.page"
+              [class.text-primary-foreground]="page === config().pagination!.page"
+              [class.hover:bg-primary-dark]="page === config().pagination!.page"
+              [class.text-muted-foreground]="page !== config().pagination!.page"
+              [class.hover:bg-surface/50]="page !== config().pagination!.page"
+              [attr.aria-label]="localization.translate('Page {page}', { page: page })"
+              [attr.aria-current]="page === config().pagination!.page ? 'page' : null"
+            >
+              {{ page }}
+            </button>
+          }
+        }
+
+        <!-- Next Button -->
+        <button
+          type="button"
+          (click)="onPageChange(config().pagination!.page + 1)"
+          [disabled]="config().pagination!.page >= totalPages() || totalPages() === 0"
+          class="flex items-center justify-center w-9 h-9 rounded border border-border/50 bg-surface text-muted-foreground hover:bg-surface/50 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+          [attr.aria-label]="localization.translate('Next page')"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,58 @@
+<div class="relative inline-block">
+  <button
+    type="button"
+    (click)="toggleDropdown()"
+    [class]="
+      'flex items-center gap-2 px-3 py-2  font-medium text-text-secondary bg-surface border border-border rounded hover:bg-surface-hover transition-colors ' +
+      buttonClass()
+    "
+  >
+    @if (icon()) {
+      <hui-icon [name]="icon()" [size]="16" />
+    }
+    <span>{{ displayLabel() }}</span>
+    <svg
+      class="w-4 h-4 transition-transform"
+      [class.rotate-180]="isOpen()"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  @if (isOpen()) {
+    <div
+      class="absolute right-0 z-30 mt-1 w-64 bg-surface border border-border rounded-xl shadow-xl"
+    >
+      <div class="flex items-center justify-between px-4 py-2 border-b border-border">
+        <span class="font-medium text-text-secondary">{{ label() }}</span>
+        @if (selectedCount() > 0) {
+          <button
+            type="button"
+            (click)="clearAll()"
+            class="text-sm text-muted-foreground hover:text-text-secondary transition-colors"
+          >
+            Clear All
+          </button>
+        }
+      </div>
+
+      <div class="mb-2 max-h-64 overflow-y-auto px-4 py-2">
+        @for (option of options(); track option.value) {
+          <div class="mb-1.5 w-full py-0.5">
+            <hui-checkbox
+              [fullWidth]="true"
+              [label]="option.label"
+              [ngModel]="isChecked(option)"
+              (ngModelChange)="onCheckboxChange(option, $event)"
+            />
+          </div>
+        }
+      </div>
+    </div>
+
+    <div (click)="closeDropdown()" class="fixed inset-0 z-20"></div>
+  }
+</div>

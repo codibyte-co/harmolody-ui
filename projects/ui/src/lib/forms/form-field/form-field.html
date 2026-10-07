@@ -1,0 +1,51 @@
+<div
+  [class]="
+    (layout() === 'row'
+      ? 'mb-4 grid grid-cols-1 gap-2 md:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)] md:gap-x-6'
+      : 'mb-4') + (isDisabled() ? ' opacity-60 pointer-events-none' : '')
+  "
+>
+  <div>
+    @if (label()) {
+      <div class="flex items-center">
+        <hui-form-label [type]="type()" [htmlFor]="computedInputId()" [required]="required()">
+          {{ localization.translate(label()) }}
+        </hui-form-label>
+        @if (helper()) {
+          <hui-form-helper [id]="computedInputId() + '-helper'" [label]="label()">
+            {{ localization.translate(helper()) }}
+          </hui-form-helper>
+        }
+      </div>
+    }
+    @if (description()) {
+      <hui-form-description [id]="descriptionId()">
+        {{ localization.translate(description()) }}
+      </hui-form-description>
+    }
+  </div>
+
+  <div [class]="layout() === 'row' ? '' : 'mt-2'">
+    <ng-content></ng-content>
+
+    @if (hint() && !showError()) {
+      <hui-form-hint [id]="hintId()">
+        {{ localization.translate(hint()) }}
+      </hui-form-hint>
+    }
+    @if (note() && !showError()) {
+      <hui-form-note
+        [id]="computedInputId() + '-note'"
+        [variant]="noteVariant()"
+        [customClasses]="noteClasses()"
+      >
+        {{ localization.translate(note()) }}
+      </hui-form-note>
+    }
+    @if (showError()) {
+      <hui-form-error [id]="errorId()">
+        {{ localization.translate(errorMessage()) }}
+      </hui-form-error>
+    }
+  </div>
+</div>

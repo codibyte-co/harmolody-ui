@@ -1,0 +1,116 @@
+<div class="relative">
+  <!-- Toggle Button -->
+  <button
+    type="button"
+    (click)="toggleDropdown()"
+    [class]="buttonClasses()"
+    [attr.aria-expanded]="isOpen()"
+    aria-haspopup="true"
+  >
+    <!-- Columns Icon -->
+    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+      />
+    </svg>
+    <span>Columns</span>
+    <!-- Chevron -->
+    <svg
+      class="w-4 h-4 transition-transform"
+      [class.rotate-180]="isOpen()"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  <!-- Dropdown Menu -->
+  @if (isOpen()) {
+    <div
+      class="absolute right-0 mt-2 w-64 bg-surface rounded-xl shadow-xl border border-border z-50"
+    >
+      <!-- Header -->
+      <div class="px-4 py-3 border-b border-border">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold text-text-primary">Show Columns</h3>
+          <button
+            type="button"
+            (click)="closeDropdown()"
+            class="text-muted-foreground hover:text-text-muted focus:outline-none"
+            aria-label="Close"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="px-4 py-2 border-b border-border flex items-center justify-between">
+        <button
+          type="button"
+          (click)="selectAll()"
+          class="text-sm font-medium text-purple-600 hover:text-purple-700 focus:outline-none"
+        >
+          Select All
+        </button>
+        <button
+          type="button"
+          (click)="deselectAll()"
+          class="text-sm font-medium text-text-muted hover:text-text-secondary focus:outline-none"
+        >
+          Deselect All
+        </button>
+        <button
+          type="button"
+          (click)="resetToDefault()"
+          class="text-sm font-medium text-blue-600 hover:text-blue-700 focus:outline-none"
+        >
+          Reset
+        </button>
+      </div>
+
+      <!-- Column List -->
+      <div class="max-h-80 overflow-y-auto py-2">
+        @for (column of hideableColumns(); track column.key) {
+          <div
+            class="px-4 py-2 hover:bg-surface-hover transition-colors"
+            [class.opacity-50]="!isColumnVisible(column.key) && visibleColumnKeys().length === 1"
+          >
+            <hui-checkbox
+              [label]="column.label"
+              [ngModel]="isColumnVisible(column.key)"
+              (ngModelChange)="onColumnVisibilityChange(column.key, $event)"
+            />
+          </div>
+        }
+        @if (hideableColumns().length === 0) {
+          <div class="px-4 py-3 text-muted-foreground text-center">
+            No hideable columns available
+          </div>
+        }
+      </div>
+
+      <!-- Footer Info -->
+      <div class="px-4 py-2 border-t border-border bg-muted rounded-b-lg">
+        <p class="text-sm text-muted-foreground">
+          {{ visibleColumnKeys().length }} of {{ hideableColumns().length }} columns visible
+        </p>
+      </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div class="fixed inset-0 z-40" (click)="closeDropdown()" aria-hidden="true"></div>
+  }
+</div>

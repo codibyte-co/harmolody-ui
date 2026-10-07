@@ -1,0 +1,25 @@
+@theme inline {
+  --color-background: var(--hui-background, #f5f5f5);
+  --color-background-soft: var(--hui-background-soft, #f1f0ff);
+  --color-foreground: var(--hui-foreground, #111827);
+  --color-surface: var(--hui-surface, #ffffff);
+  --color-surface-hover: var(--hui-surface-hover, #f3f4ff);
+  --color-card: var(--hui-surface, #ffffff);
+  --color-card-foreground: var(--hui-foreground, #111827);
+  --color-popover: var(--hui-surface, #ffffff);
+  --color-popover-foreground: var(--hui-foreground, #111827);
+  --color-primary: var(--hui-primary, #7c3aed);
+  --color-primary-foreground: var(--hui-primary-foreground, #ffffff);
+  --color-primary-soft: var(--hui-primary-soft, #ddd6fe);
+  --color-muted: var(--hui-muted, #f1f0ff);
+  --color-muted-foreground: var(--hui-text-muted, #6b7280);
+  --color-text-primary: var(--hui-foreground, #111827);
+  --color-text-secondary: var(--hui-text-secondary, #374151);
+  --color-text-muted: var(--hui-text-muted, #6b7280);
+  --color-text-disabled: var(--hui-text-disabled, #9ca3af);
+  --color-border: var(--hui-border, #e5e7eb);
+  --color-input: var(--hui-border, #e5e7eb);
+  --color-ring: var(--hui-primary, #7c3aed);
+  --color-destructive: var(--hui-destructive, #e11d48);
+  --color-destructive-foreground: #ffffff;
+}

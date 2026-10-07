@@ -1,0 +1,38 @@
+<div class="relative">
+  <hui-icon
+    name="search"
+    [size]="18"
+    [ariaLabel]="localization.translate('Search')"
+    customClass="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground"
+  />
+
+  <input
+    #searchInput
+    [id]="id()"
+    type="search"
+    inputmode="search"
+    autocomplete="off"
+    [placeholder]="localization.translate(placeholder())"
+    [value]="value()"
+    [disabled]="isDisabled()"
+    [attr.aria-label]="accessibleLabel()"
+    [attr.aria-describedby]="ariaDescribedby() || null"
+    [attr.aria-invalid]="invalid() || null"
+    [class]="inputClasses()"
+    (input)="onInput($event)"
+    (blur)="markTouched()"
+    (keydown.enter)="submitSearch()"
+  />
+
+  @if (hasValue() && showClear() && !isDisabled()) {
+    <button
+      type="button"
+      [attr.aria-label]="localization.translate(clearLabel())"
+      [attr.title]="localization.translate(clearLabel())"
+      class="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-primary"
+      (click)="clear()"
+    >
+      <hui-icon name="close-x" [size]="18" [ariaLabel]="localization.translate(clearLabel())" />
+    </button>
+  }
+</div>
